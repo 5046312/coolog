@@ -28,10 +28,6 @@ func DefaultFileConfig() *FileConfig {
 	return &FileConfig{nil,DEFAULT_FILENAME,DEFAULT_DIR, DEFAULT_SIZE, DEFAULT_EXT}
 }
 
-// Generate log files based on configuration
-func (fc *FileConfig) InitFileLog(config *FileConfig) {
-}
-
 // Write a line of string to the log file
 func (fc *FileConfig) Write(content string) error {
 	// TODO: Determine whether it has been initialized and locked
