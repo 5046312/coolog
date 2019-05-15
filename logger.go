@@ -26,7 +26,6 @@ type Coolog struct {
 
 // create a file log
 func NewFileLog(conf *adapter.FileConfig) *Coolog {
-	conf.InitFileLog()
 	return &Coolog{
 		adapter: adapter.Adapter{conf },
 	}

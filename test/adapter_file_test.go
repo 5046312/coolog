@@ -5,7 +5,15 @@ import (
 	"testing"
 )
 
-func TestMkFileDir(t *testing.T) {
+
+func Test_WriteFileLog(t *testing.T){
 	config := adapter.DefaultFileConfig()
-	config.MkDir()
+	config.Write("Write Test Text")
+	config.Write("Write Test Text")
+	config.Write("Write Test Text")
+	config.Write("Write Test Text")
+	config.Write("Write Test Text")
+	config.Write("Write Test Text")
+	config.Write("Write Test Text")
+	config.Write("Write Test Text")
 }

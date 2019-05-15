@@ -11,67 +11,70 @@ import (
 const (
 	DEFAULT_DIR      = "runtime/logs/"
 	DEFAULT_SIZE     = 5
-	DEFAULT_FILENAME = "2016-01-02"
+	DEFAULT_FILENAME = "2006-01-02"
 	DEFAULT_EXT      = ".log"
 )
 
 type FileConfig struct {
-	file 	 *os.File
+	F 	 *os.File
 	filename string
 	dir      string
 	size     int
 	ext      string
 }
 
-// 获得默认配置
+// Get the default configuration item for the file log
 func DefaultFileConfig() *FileConfig {
 	return &FileConfig{nil,DEFAULT_FILENAME,DEFAULT_DIR, DEFAULT_SIZE, DEFAULT_EXT}
 }
 
 // Generate log files based on configuration
-func (file *FileConfig) InitFileLog() {
-
+func (fc *FileConfig) InitFileLog(config *FileConfig) {
 }
 
-func (file *FileConfig) Write(content string) {
-	// 1. 判断文件大小，是否需要拆分
-
+// Write a line of string to the log file
+func (fc *FileConfig) Write(content string) error {
+	// TODO: Determine whether it has been initialized and locked
+	_, err := fc.getFile().Write([]byte(content + "\n"))
+	return err
 }
 
 // Open the log folder full path
-func (file *FileConfig) getFullDirPath() string {
+func (fc *FileConfig) getFullDirPath() string {
 	dir, _ := os.Getwd()
-	return dir + "/" + strings.Trim(file.dir, "/") + "/"
+	return dir + "/" + strings.Trim(fc.dir, "/") + "/"
 }
 
 // Get the log file full path
-func (file *FileConfig) getFullPath() string {
-	dirPath := file.getFullDirPath()
-	filename := time.Now().Format(file.filename) + file.ext
+func (fc *FileConfig) getFullFilePath() string {
+	dirPath := fc.getFullDirPath()
+	filename := time.Now().Format(fc.filename) + fc.ext
 	return dirPath + filename
 }
 
 // Get log file
-func (file *FileConfig) getFile(filePath string) *os.File {
-	_, err := os.Stat(filePath)
-	switch {
-	case os.IsNotExist(err):
-		file.MkDir()
-	case os.IsPermission(err):
-		log.Fatalf("Permission :%v", err)
-	}
+func (fc *FileConfig) getFile() *os.File {
+	if fc.F == nil {
+		filePath := fc.getFullFilePath()
+		_, err := os.Stat(filePath)
+		switch {
+		case os.IsNotExist(err):
+			fc.mkLogDir()
+		case os.IsPermission(err):
+			log.Fatalf("Permission :%v", err)
+		}
 
-	handle, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatalf("Fail to Open Log File :%v", err)
+		fc.F, err = os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Fatalf("Fail to Open Log File :%v", err)
+		}
 	}
-
-	return handle
+	return fc.F
 }
 
 // Create log dir
-func (file *FileConfig) MkDir() {
-	path := file.getFullDirPath()
+func (fc *FileConfig) mkLogDir() {
+	path := fc.getFullDirPath()
 	fmt.Printf("create log dir:%s", path)
 	os.MkdirAll(path, os.ModePerm)
 }
