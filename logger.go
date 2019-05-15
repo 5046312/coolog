@@ -28,11 +28,12 @@ type Coolog struct {
 func NewFileLog(conf *adapter.FileConfig) *Coolog {
 	conf.InitFileLog()
 	return &Coolog{
-		adapter: adapter.Adapter{file: conf},
+		adapter: adapter.Adapter{conf },
 	}
 }
 
+// Including multiple adapters working at the same time
 func (log *Config) Write(content string){
-	// Including multiple adapters working at the same time
+
 	
 }

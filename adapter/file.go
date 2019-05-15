@@ -16,6 +16,7 @@ const (
 )
 
 type FileConfig struct {
+	file 	 *os.File
 	filename string
 	dir      string
 	size     int
@@ -24,10 +25,10 @@ type FileConfig struct {
 
 // 获得默认配置
 func DefaultFileConfig() *FileConfig {
-	return &FileConfig{DEFAULT_DIR, DEFAULT_FILENAME, DEFAULT_SIZE, DEFAULT_EXT}
+	return &FileConfig{nil,DEFAULT_FILENAME,DEFAULT_DIR, DEFAULT_SIZE, DEFAULT_EXT}
 }
 
-// 初始化file，创建文件
+// Generate log files based on configuration
 func (file *FileConfig) InitFileLog() {
 
 }
@@ -37,13 +38,21 @@ func (file *FileConfig) Write(content string) {
 
 }
 
-func (file *FileConfig) getFullPath() string {
-	dir := strings.TrimRight(file.dir, "/") + "/"
-	filename := time.Now().Format(file.filename) + file.ext
-	return dir + filename
+// Open the log folder full path
+func (file *FileConfig) getFullDirPath() string {
+	dir, _ := os.Getwd()
+	return dir + "/" + strings.Trim(file.dir, "/") + "/"
 }
 
-func (file *FileConfig) openFile(filePath string) *os.File {
+// Get the log file full path
+func (file *FileConfig) getFullPath() string {
+	dirPath := file.getFullDirPath()
+	filename := time.Now().Format(file.filename) + file.ext
+	return dirPath + filename
+}
+
+// Get log file
+func (file *FileConfig) getFile(filePath string) *os.File {
 	_, err := os.Stat(filePath)
 	switch {
 	case os.IsNotExist(err):
@@ -54,17 +63,15 @@ func (file *FileConfig) openFile(filePath string) *os.File {
 
 	handle, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatalf("Fail to OpenFile :%v", err)
+		log.Fatalf("Fail to Open Log File :%v", err)
 	}
 
 	return handle
 }
 
-// create log dir
+// Create log dir
 func (file *FileConfig) MkDir() {
-	dir, _ := os.Getwd()
-	logPath := dir + strings.TrimRight(dir, "/")
-	fmt.Printf("create log dir:%s", logPath)
-	fmt.Println(logPath)
-	os.MkdirAll(logPath, os.ModePerm)
+	path := file.getFullDirPath()
+	fmt.Printf("create log dir:%s", path)
+	os.MkdirAll(path, os.ModePerm)
 }
