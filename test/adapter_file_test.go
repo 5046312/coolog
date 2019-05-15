@@ -6,6 +6,10 @@ import (
 )
 
 
+func Test_InitFileLog(t *testing.T){
+	adapter.DefaultFileConfig()
+}
+
 func Test_WriteFileLog(t *testing.T){
 	config := adapter.DefaultFileConfig()
 	config.Write("Write Test Text")
