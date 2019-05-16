@@ -16,7 +16,7 @@ const (
 	DEFAULT_FILENAME  = "2006-01-02"
 	DEFAULT_EXT       = ".log"
 	DEFAULT_SINGLE    = false
-	DEFAULT_Max_SIZE  = 5 * 10
+	DEFAULT_Max_SIZE  = 5 * 1024
 	DEFAULT_Max_Files = 10
 	DEFAULT_JSON      = false
 )
@@ -52,8 +52,8 @@ func DefaultFileConfig() *FileConfig {
 
 // Write a line of string to the log file
 func (fc *FileConfig) Write(content string) {
-	fc.mu.RLock()
-	defer fc.mu.RUnlock()
+	fc.mu.Lock()
+	defer fc.mu.Unlock()
 	// TODO: Determine whether it has been initialized and locked
 	fc.getFile().Write([]byte(content + "\n"))
 	fc.splitLog()
