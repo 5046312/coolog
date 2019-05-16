@@ -1,6 +1,9 @@
 package coolog
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func Test_Coolog_FileLog_Write(t *testing.T) {
 	conf := FileConfig()
@@ -27,4 +30,5 @@ func Test_Coolog_FileLog_Debug(t *testing.T) {
 	log.Debug("Write Debug in file")
 	log.Debug("Write Debug in file")
 	log.Debug("Write Debug in file")
+	time.Sleep(time.Second * 5)
 }

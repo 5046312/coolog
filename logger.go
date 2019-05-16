@@ -64,17 +64,29 @@ func (log *Coolog) format(l Level, m ...interface{}) string {
 //
 func (log *Coolog) Debug(content ...interface{}) {
 	msg := log.format(LEVEL_DEBUG, content...)
-	log.Write(msg)
+	go log.Write(msg)
 }
 
 //
-func (log *Config) Info(content string) {}
+func (log *Coolog) Info(content ...interface{}) {
+	msg := log.format(LEVEL_INFO, content...)
+	go log.Write(msg)
+}
 
 //
-func (log *Config) Notice(content string) {}
+func (log *Coolog) Notice(content ...interface{}) {
+	msg := log.format(LEVEL_NOTICE, content...)
+	go log.Write(msg)
+}
 
 //
-func (log *Config) Warning(content string) {}
+func (log *Coolog) Warning(content ...interface{}) {
+	msg := log.format(LEVEL_WARNING, content...)
+	go log.Write(msg)
+}
 
 //
-func (log *Config) Error(content string) {}
+func (log *Coolog) Error(content ...interface{}) {
+	msg := log.format(LEVEL_ERROR, content...)
+	go log.Write(msg)
+}
