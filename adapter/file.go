@@ -14,9 +14,9 @@ const (
 	DEFAULT_FILENAME = "2006-01-02"    // Log File Name Time Format
 	DEFAULT_EXT      = ".log"          // Log File Suffix
 	DEFAULT_SINGLE   = false           // Split Files
-	DEFAULT_Max_SIZE = 5 * 1024        // Byte
-	DEFAULT_Max_Time = 5               // Hour
-	DEFAULT_JSON     = false           // Output Json Format
+	DEFAULT_MAX_SIZE = 5 * 1024        // Byte
+	DEFAULT_MAX_TIME = 5               // Hour
+	DEFAULT_JSON     = false           // Todo: Output Json Format
 )
 
 type FileConfig struct {
@@ -27,24 +27,23 @@ type FileConfig struct {
 	Filename string // Time Format of File Names
 	Ext      string // Log File Suffix
 	Single   bool   // Whether to save logs for a single file
-	Max_size int64  // Upper limit of file capacity when splitting files when non-single file logs
-	Max_time int    // Files that exceed the maximum retention time(hour) will be deleted, and no deletions will be made for 0.
+	MaxSize int64  // Upper limit of file capacity when splitting files when non-single file logs
+	MaxTime int    // Files that exceed the maximum retention time(hour) will be deleted, and no deletions will be made for 0.
 	Json     bool   // JSON format
 }
 
 // Get the default configuration item for the file log
 func DefaultFileConfig() *FileConfig {
-	fc := &FileConfig{
+	return &FileConfig{
 		mu:       new(sync.RWMutex),
 		Path:     DEFAULT_PATH,
 		Filename: DEFAULT_FILENAME,
 		Ext:      DEFAULT_EXT,
 		Single:   DEFAULT_SINGLE,
-		Max_size: DEFAULT_Max_SIZE,
-		Max_time: DEFAULT_Max_Time,
+		MaxSize:  DEFAULT_MAX_SIZE,
+		MaxTime:  DEFAULT_MAX_TIME,
 		Json:     DEFAULT_JSON,
 	}
-	return fc
 }
 
 // Write a line of string to the log file
@@ -54,7 +53,7 @@ func (fc *FileConfig) Write(content string) {
 	// TODO: Determine whether it has been initialized and locked
 	_, err := fc.getFile().Write([]byte(content))
 	if err != nil {
-		log.Fatalf("Write in file err :%v", err)
+		log.Fatalf("Write In File Err :%v", err)
 	}
 	fc.splitLog()
 }
@@ -109,11 +108,15 @@ func (fc *FileConfig) mkLogPATH() {
 
 // Split log file
 func (fc *FileConfig) splitLog() {
+	// Single File Don't Split Files
+	if fc.Single {
+		return
+	}
 	filePath := fc.getFullFilePath()
 	fileInfo, _ := os.Stat(filePath)
 	fileSize := fileInfo.Size()
 	// When current file size more than config, split file
-	if fileSize >= fc.Max_size {
+	if fileSize >= fc.MaxSize {
 		// Create new main log file
 		fc.close()
 		// Rename main log file
@@ -126,14 +129,14 @@ func (fc *FileConfig) splitLog() {
 // Limit the max number of log files
 // When Create a File
 func (fc *FileConfig) limitFiles() {
-	if fc.Max_time > 0 {
+	if fc.MaxTime > 0 {
 		path := fc.getFullDirPath()
 		filepath.Walk(path, func(file string, info os.FileInfo, err error) error {
 			if info == nil || info.IsDir() {
 				return nil
 			}
 			// TODO:Compare ModTime with MaxTime
-			if info.ModTime().Add(time.Second * time.Duration(fc.Max_time)).Before(time.Now()) {
+			if info.ModTime().Add(time.Hour * time.Duration(fc.MaxTime)).Before(time.Now()) {
 				//fmt.Println("Del Old Log:", file)
 				os.Remove(file)
 			}
