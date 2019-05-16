@@ -11,20 +11,19 @@ import (
 )
 
 const (
-	DEFAULT_PATH     = "runtime/logs/"
-	DEFAULT_FILENAME = "2006-01-02"
-	DEFAULT_EXT      = ".log"
-	DEFAULT_SINGLE   = false
-	DEFAULT_Max_SIZE = 5 * 1024
-	DEFAULT_Max_Time = 5 * 60
-	DEFAULT_JSON     = false
+	DEFAULT_PATH     = "runtime/logs/" // Log File Dir
+	DEFAULT_FILENAME = "2006-01-02"    // Log File Name Time Format
+	DEFAULT_EXT      = ".log"          // Log File Suffix
+	DEFAULT_SINGLE   = false           // Split Files
+	DEFAULT_Max_SIZE = 5 * 1024        // Byte
+	DEFAULT_Max_Time = 5               // Hour
+	DEFAULT_JSON     = false           // Output Json Format
 )
 
 type FileConfig struct {
-	mu    *sync.RWMutex
-	f     *os.File
-	files int // The number of logs in Log Folder
-
+	mu       *sync.RWMutex
+	f        *os.File
+	files    int    // The number of logs in Log Folder
 	Path     string // Log Folder Path
 	Filename string // Time Format of File Names
 	Ext      string // Log File Suffix
