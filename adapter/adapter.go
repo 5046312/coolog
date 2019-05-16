@@ -1,5 +1,11 @@
 package adapter
 
 type Adapter struct {
-	file *FileConfig
+	File *FileConfig
+}
+
+func NewFileAdapter(fc *FileConfig) *Adapter {
+	return &Adapter{
+		File: fc,
+	}
 }

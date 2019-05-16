@@ -1,7 +1,6 @@
 package adapter
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -23,28 +22,28 @@ const (
 
 type FileConfig struct {
 	mu *sync.RWMutex
-	F  *os.File
+	f  *os.File
 
-	path      string // Log Folder Path
-	filename  string // Time Format of File Names
-	ext       string // Log File Suffix
-	single    bool   // Whether to save logs for a single file
-	max_size  int64  // Upper limit of file capacity when splitting files when non-single file logs
-	max_files int    // Early logs that exceed the number of files will be deleted automatically, and no deletions will be made for 0.
-	json      bool   // JSON format
+	Path      string // Log Folder Path
+	Filename  string // Time Format of File Names
+	Ext       string // Log File Suffix
+	Single    bool   // Whether to save logs for a single file
+	Max_size  int64  // Upper limit of file capacity when splitting files when non-single file logs
+	Max_files int    // Early logs that exceed the number of files will be deleted automatically, and no deletions will be made for 0.
+	Json      bool   // JSON format
 }
 
 // Get the default configuration item for the file log
 func DefaultFileConfig() *FileConfig {
 	fc := &FileConfig{
 		mu:        new(sync.RWMutex),
-		path:      DEFAULT_PATH,
-		filename:  DEFAULT_FILENAME,
-		ext:       DEFAULT_EXT,
-		single:    DEFAULT_SINGLE,
-		max_size:  DEFAULT_Max_SIZE,
-		max_files: DEFAULT_Max_Files,
-		json:      DEFAULT_JSON,
+		Path:      DEFAULT_PATH,
+		Filename:  DEFAULT_FILENAME,
+		Ext:       DEFAULT_EXT,
+		Single:    DEFAULT_SINGLE,
+		Max_size:  DEFAULT_Max_SIZE,
+		Max_files: DEFAULT_Max_Files,
+		Json:      DEFAULT_JSON,
 	}
 	fc.getFile()
 	return fc
@@ -55,24 +54,24 @@ func (fc *FileConfig) Write(content string) {
 	fc.mu.Lock()
 	defer fc.mu.Unlock()
 	// TODO: Determine whether it has been initialized and locked
-	fc.getFile().Write([]byte(content + "\n"))
+	fc.getFile().Write([]byte(content))
 	fc.splitLog()
 }
 
 // Open the log folder full path
 func (fc *FileConfig) getFullDirPath() string {
 	dir, _ := os.Getwd()
-	return dir + "/" + strings.Trim(fc.path, "/") + "/"
+	return dir + "/" + strings.Trim(fc.Path, "/") + "/"
 }
 
 // Get the main log file name without ext in the corresponding format for today
 func (fc *FileConfig) getFilename() string {
-	return time.Now().Format(fc.filename)
+	return time.Now().Format(fc.Filename)
 }
 
 // Get log file ext
 func (fc *FileConfig) getExt() string {
-	return "." + strings.Trim(fc.ext, ".")
+	return "." + strings.Trim(fc.Ext, ".")
 }
 
 // Get the log file full path
@@ -82,7 +81,7 @@ func (fc *FileConfig) getFullFilePath() string {
 
 // Get log file
 func (fc *FileConfig) getFile() *os.File {
-	if fc.F == nil {
+	if fc.f == nil {
 		filePath := fc.getFullFilePath()
 		_, err := os.Stat(filePath)
 		switch {
@@ -92,12 +91,12 @@ func (fc *FileConfig) getFile() *os.File {
 			log.Fatalf("Permission :%v", err)
 		}
 
-		fc.F, err = os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		fc.f, err = os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Fatalf("Fail To Open Log File :%v", err)
 		}
 	}
-	return fc.F
+	return fc.f
 }
 
 // Create log dir
@@ -111,10 +110,8 @@ func (fc *FileConfig) splitLog() {
 	filePath := fc.getFullFilePath()
 	fileInfo, _ := os.Stat(filePath)
 	fileSize := fileInfo.Size()
-	fmt.Println("main log file size:", fileSize, ", max size:", fc.max_size)
-
 	// When current file size more than config, split file
-	if fileSize >= fc.max_size {
+	if fileSize >= fc.Max_size {
 		// Create new main log file
 		defer fc.getFile()
 		fc.close()
@@ -142,6 +139,6 @@ func (fc *FileConfig) getTodayFiles() []string {
 
 // Close file
 func (fc *FileConfig) close() {
-	fc.F.Close()
-	fc.F = nil
+	fc.f.Close()
+	fc.f = nil
 }
