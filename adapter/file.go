@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -45,7 +44,6 @@ func DefaultFileConfig() *FileConfig {
 		Max_time: DEFAULT_Max_Time,
 		Json:     DEFAULT_JSON,
 	}
-	fc.getFile()
 	return fc
 }
 
@@ -118,10 +116,8 @@ func (fc *FileConfig) splitLog() {
 	if fileSize >= fc.Max_size {
 		// Create new main log file
 		fc.close()
-		todayFiles := fc.getTodayFiles()
-		filesCount := len(todayFiles)
 		// Rename main log file
-		newName := fc.getFullDirPath() + fc.getFilename() + "p" + strconv.Itoa(filesCount) + fc.getExt()
+		newName := fc.getFullDirPath() + fc.getFilename() + "P" + time.Now().Format("150405") + fc.getExt()
 		os.Rename(fc.getFullFilePath(), newName)
 		fc.getFile()
 	}
@@ -137,7 +133,8 @@ func (fc *FileConfig) limitFiles() {
 				return nil
 			}
 			// TODO:Compare ModTime with MaxTime
-			if info.ModTime().Add(time.Hour * time.Duration(fc.Max_time)).Before(time.Now()) {
+			if info.ModTime().Add(time.Second * time.Duration(fc.Max_time)).Before(time.Now()) {
+				//fmt.Println("Del Old Log:", file)
 				os.Remove(file)
 			}
 			return nil
