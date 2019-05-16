@@ -115,15 +115,14 @@ func (fc *FileConfig) splitLog() {
 
 	// When current file size more than config, split file
 	if fileSize >= fc.max_size {
+		// Create new main log file
+		defer fc.getFile()
+		fc.close()
 		todayFiles := fc.getTodayFiles()
 		filesCount := len(todayFiles)
-		fc.F.Close()
 		// Rename main log file
 		newName := fc.getFullDirPath() + fc.getFilename() + "-p" + strconv.Itoa(filesCount) + fc.getExt()
 		os.Rename(fc.getFullFilePath(), newName)
-		fc.F = nil
-		// Create new main log file
-		fc.getFile()
 	}
 }
 
@@ -139,4 +138,10 @@ func (fc *FileConfig) getTodayFiles() []string {
 	path := fc.getFullDirPath()
 	files, _ := filepath.Glob(path + fc.getFilename() + "*" + fc.getExt())
 	return files
+}
+
+// Close file
+func (fc *FileConfig) close() {
+	fc.F.Close()
+	fc.F = nil
 }
