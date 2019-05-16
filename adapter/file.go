@@ -1,8 +1,11 @@
 package adapter
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -13,8 +16,9 @@ const (
 	DEFAULT_FILENAME  = "2006-01-02"
 	DEFAULT_EXT       = ".log"
 	DEFAULT_SINGLE    = false
-	DEFAULT_SIZE      = 5 * 1024
+	DEFAULT_Max_SIZE  = 5 * 10
 	DEFAULT_Max_Files = 10
+	DEFAULT_JSON      = false
 )
 
 type FileConfig struct {
@@ -25,8 +29,9 @@ type FileConfig struct {
 	filename  string // Time Format of File Names
 	ext       string // Log File Suffix
 	single    bool   // Whether to save logs for a single file
-	size      int64  // Upper limit of file capacity when splitting files when non-single file logs
+	max_size  int64  // Upper limit of file capacity when splitting files when non-single file logs
 	max_files int    // Early logs that exceed the number of files will be deleted automatically, and no deletions will be made for 0.
+	json      bool   // JSON format
 }
 
 // Get the default configuration item for the file log
@@ -37,19 +42,21 @@ func DefaultFileConfig() *FileConfig {
 		filename:  DEFAULT_FILENAME,
 		ext:       DEFAULT_EXT,
 		single:    DEFAULT_SINGLE,
-		size:      DEFAULT_SIZE,
+		max_size:  DEFAULT_Max_SIZE,
 		max_files: DEFAULT_Max_Files,
+		json:      DEFAULT_JSON,
 	}
 	fc.getFile()
 	return fc
 }
 
 // Write a line of string to the log file
-func (fc *FileConfig) Write(content string) error {
-	defer fc.splitLog()
+func (fc *FileConfig) Write(content string) {
+	fc.mu.RLock()
+	defer fc.mu.RUnlock()
 	// TODO: Determine whether it has been initialized and locked
-	_, err := fc.getFile().Write([]byte(content + "\n"))
-	return err
+	fc.getFile().Write([]byte(content + "\n"))
+	fc.splitLog()
 }
 
 // Open the log folder full path
@@ -58,11 +65,19 @@ func (fc *FileConfig) getFullDirPath() string {
 	return dir + "/" + strings.Trim(fc.path, "/") + "/"
 }
 
+// Get the main log file name without ext in the corresponding format for today
+func (fc *FileConfig) getFilename() string {
+	return time.Now().Format(fc.filename)
+}
+
+// Get log file ext
+func (fc *FileConfig) getExt() string {
+	return "." + strings.Trim(fc.ext, ".")
+}
+
 // Get the log file full path
 func (fc *FileConfig) getFullFilePath() string {
-	dirPath := fc.getFullDirPath()
-	filename := time.Now().Format(fc.filename) + "." + strings.Trim(fc.ext, ".")
-	return dirPath + filename
+	return fc.getFullDirPath() + fc.getFilename() + fc.getExt()
 }
 
 // Get log file
@@ -96,8 +111,32 @@ func (fc *FileConfig) splitLog() {
 	filePath := fc.getFullFilePath()
 	fileInfo, _ := os.Stat(filePath)
 	fileSize := fileInfo.Size()
-	// When current file size more than config, split file
-	if fileSize > fc.size {
+	fmt.Println("main log file size:", fileSize, ", max size:", fc.max_size)
 
+	// When current file size more than config, split file
+	if fileSize >= fc.max_size {
+		todayFiles := fc.getTodayFiles()
+		filesCount := len(todayFiles)
+		fc.F.Close()
+		// Rename main log file
+		newName := fc.getFullDirPath() + fc.getFilename() + "-p" + strconv.Itoa(filesCount) + fc.getExt()
+		os.Rename(fc.getFullFilePath(), newName)
+		fc.F = nil
+		// Create new main log file
+		fc.getFile()
 	}
+}
+
+// Check whether the number of log files exceeds the maximum
+func (fc *FileConfig) getAllFiles() []string {
+	path := fc.getFullDirPath()
+	files, _ := filepath.Glob(path + "*" + fc.getExt())
+	return files
+}
+
+// Get the number of log files for today
+func (fc *FileConfig) getTodayFiles() []string {
+	path := fc.getFullDirPath()
+	files, _ := filepath.Glob(path + fc.getFilename() + "*" + fc.getExt())
+	return files
 }
