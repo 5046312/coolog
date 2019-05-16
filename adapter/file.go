@@ -9,24 +9,37 @@ import (
 )
 
 const (
-	DEFAULT_DIR      = "runtime/logs/"
-	DEFAULT_SIZE     = 5
-	DEFAULT_FILENAME = "2006-01-02"
-	DEFAULT_EXT      = ".log"
+	DEFAULT_PATH      = "runtime/logs/"
+	DEFAULT_FILENAME  = "2006-01-02"
+	DEFAULT_EXT       = ".log"
+	DEFAULT_SINGLE    = false
+	DEFAULT_SIZE      = 5 * 1024
+	DEFAULT_Max_Files = 10
 )
 
 type FileConfig struct {
-	mu       *sync.RWMutex
-	F        *os.File
-	filename string
-	dir      string
-	size     int
-	ext      string
+	mu *sync.RWMutex
+	F  *os.File
+
+	path      string // Log Folder Path
+	filename  string // Time Format of File Names
+	ext       string // Log File Suffix
+	single    bool   // Whether to save logs for a single file
+	size      int64  // Upper limit of file capacity when splitting files when non-single file logs
+	max_files int    // Early logs that exceed the number of files will be deleted automatically, and no deletions will be made for 0.
 }
 
 // Get the default configuration item for the file log
 func DefaultFileConfig() *FileConfig {
-	fc := &FileConfig{new(sync.RWMutex), nil, DEFAULT_FILENAME, DEFAULT_DIR, DEFAULT_SIZE, DEFAULT_EXT}
+	fc := &FileConfig{
+		mu:        new(sync.RWMutex),
+		path:      DEFAULT_PATH,
+		filename:  DEFAULT_FILENAME,
+		ext:       DEFAULT_EXT,
+		single:    DEFAULT_SINGLE,
+		size:      DEFAULT_SIZE,
+		max_files: DEFAULT_Max_Files,
+	}
 	fc.getFile()
 	return fc
 }
@@ -42,13 +55,13 @@ func (fc *FileConfig) Write(content string) error {
 // Open the log folder full path
 func (fc *FileConfig) getFullDirPath() string {
 	dir, _ := os.Getwd()
-	return dir + "/" + strings.Trim(fc.dir, "/") + "/"
+	return dir + "/" + strings.Trim(fc.path, "/") + "/"
 }
 
 // Get the log file full path
 func (fc *FileConfig) getFullFilePath() string {
 	dirPath := fc.getFullDirPath()
-	filename := time.Now().Format(fc.filename) + fc.ext
+	filename := time.Now().Format(fc.filename) + "." + strings.Trim(fc.ext, ".")
 	return dirPath + filename
 }
 
@@ -59,7 +72,7 @@ func (fc *FileConfig) getFile() *os.File {
 		_, err := os.Stat(filePath)
 		switch {
 		case os.IsNotExist(err):
-			fc.mkLogDir()
+			fc.mkLogPATH()
 		case os.IsPermission(err):
 			log.Fatalf("Permission :%v", err)
 		}
@@ -73,12 +86,18 @@ func (fc *FileConfig) getFile() *os.File {
 }
 
 // Create log dir
-func (fc *FileConfig) mkLogDir() {
+func (fc *FileConfig) mkLogPATH() {
 	path := fc.getFullDirPath()
 	os.MkdirAll(path, os.ModePerm)
 }
 
 // Split log file
 func (fc *FileConfig) splitLog() {
+	filePath := fc.getFullFilePath()
+	fileInfo, _ := os.Stat(filePath)
+	fileSize := fileInfo.Size()
+	// When current file size more than config, split file
+	if fileSize > fc.size {
 
+	}
 }
