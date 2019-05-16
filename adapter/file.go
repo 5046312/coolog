@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -21,8 +22,9 @@ const (
 )
 
 type FileConfig struct {
-	mu *sync.RWMutex
-	f  *os.File
+	mu    *sync.RWMutex
+	f     *os.File
+	files int // The number of logs in Log Folder
 
 	Path      string // Log Folder Path
 	Filename  string // Time Format of File Names
@@ -54,7 +56,10 @@ func (fc *FileConfig) Write(content string) {
 	fc.mu.Lock()
 	defer fc.mu.Unlock()
 	// TODO: Determine whether it has been initialized and locked
-	fc.getFile().Write([]byte(content))
+	_, err := fc.getFile().Write([]byte(content))
+	if err != nil {
+		log.Fatalf("Write in file err :%v", err)
+	}
 	fc.splitLog()
 }
 
@@ -95,6 +100,7 @@ func (fc *FileConfig) getFile() *os.File {
 		if err != nil {
 			log.Fatalf("Fail To Open Log File :%v", err)
 		}
+		fc.limitFiles()
 	}
 	return fc.f
 }
@@ -113,13 +119,24 @@ func (fc *FileConfig) splitLog() {
 	// When current file size more than config, split file
 	if fileSize >= fc.Max_size {
 		// Create new main log file
-		defer fc.getFile()
 		fc.close()
 		todayFiles := fc.getTodayFiles()
 		filesCount := len(todayFiles)
 		// Rename main log file
-		newName := fc.getFullDirPath() + fc.getFilename() + "-p" + strconv.Itoa(filesCount) + fc.getExt()
+		newName := fc.getFullDirPath() + fc.getFilename() + "p" + strconv.Itoa(filesCount) + fc.getExt()
 		os.Rename(fc.getFullFilePath(), newName)
+		fc.getFile()
+	}
+}
+
+// Limit the max number of log files
+// When Create a File
+func (fc *FileConfig) limitFiles() {
+	files := fc.getAllFiles()
+	if fc.Max_files > 0 && len(files) > fc.Max_files {
+		// TODO:Compare current files with max files
+		toDelFiles := files[:len(files)-fc.Max_files]
+		fmt.Println("Need To Del Files: ", toDelFiles)
 	}
 }
 

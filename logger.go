@@ -46,8 +46,10 @@ func NewFileLog(fc *adapter.FileConfig) *Coolog {
 func (log *Coolog) Write(content string) {
 	if log.adapter.File != nil {
 		// Write in files
-		fmt.Print(content)
-		log.adapter.File.Write(content)
+		go func() {
+			fmt.Print(content)
+			log.adapter.File.Write(content)
+		}()
 	}
 	// Todo more adapter
 }
@@ -64,29 +66,29 @@ func (log *Coolog) format(l Level, m ...interface{}) string {
 //
 func (log *Coolog) Debug(content ...interface{}) {
 	msg := log.format(LEVEL_DEBUG, content...)
-	go log.Write(msg)
+	log.Write(msg)
 }
 
 //
 func (log *Coolog) Info(content ...interface{}) {
 	msg := log.format(LEVEL_INFO, content...)
-	go log.Write(msg)
+	log.Write(msg)
 }
 
 //
 func (log *Coolog) Notice(content ...interface{}) {
 	msg := log.format(LEVEL_NOTICE, content...)
-	go log.Write(msg)
+	log.Write(msg)
 }
 
 //
 func (log *Coolog) Warning(content ...interface{}) {
 	msg := log.format(LEVEL_WARNING, content...)
-	go log.Write(msg)
+	log.Write(msg)
 }
 
 //
 func (log *Coolog) Error(content ...interface{}) {
 	msg := log.format(LEVEL_ERROR, content...)
-	go log.Write(msg)
+	log.Write(msg)
 }

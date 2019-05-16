@@ -23,12 +23,12 @@ func Test_Coolog_FileLog_Write(t *testing.T) {
 
 func Test_Coolog_FileLog_Debug(t *testing.T) {
 	conf := FileConfig()
-	conf.Max_size = 200
+	conf.Max_size = 20
 	log := NewFileLog(conf)
 	log.Debug("Write Debug in file")
 	log.Debug("Write Debug in file")
 	log.Debug("Write Debug in file")
 	log.Debug("Write Debug in file")
 	log.Debug("Write Debug in file")
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 3)
 }
