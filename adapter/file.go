@@ -1,7 +1,6 @@
 package adapter
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,13 +11,13 @@ import (
 )
 
 const (
-	DEFAULT_PATH      = "runtime/logs/"
-	DEFAULT_FILENAME  = "2006-01-02"
-	DEFAULT_EXT       = ".log"
-	DEFAULT_SINGLE    = false
-	DEFAULT_Max_SIZE  = 5 * 1024
-	DEFAULT_Max_Files = 10
-	DEFAULT_JSON      = false
+	DEFAULT_PATH     = "runtime/logs/"
+	DEFAULT_FILENAME = "2006-01-02"
+	DEFAULT_EXT      = ".log"
+	DEFAULT_SINGLE   = false
+	DEFAULT_Max_SIZE = 5 * 1024
+	DEFAULT_Max_Time = 5 * 60
+	DEFAULT_JSON     = false
 )
 
 type FileConfig struct {
@@ -26,26 +25,26 @@ type FileConfig struct {
 	f     *os.File
 	files int // The number of logs in Log Folder
 
-	Path      string // Log Folder Path
-	Filename  string // Time Format of File Names
-	Ext       string // Log File Suffix
-	Single    bool   // Whether to save logs for a single file
-	Max_size  int64  // Upper limit of file capacity when splitting files when non-single file logs
-	Max_files int    // Early logs that exceed the number of files will be deleted automatically, and no deletions will be made for 0.
-	Json      bool   // JSON format
+	Path     string // Log Folder Path
+	Filename string // Time Format of File Names
+	Ext      string // Log File Suffix
+	Single   bool   // Whether to save logs for a single file
+	Max_size int64  // Upper limit of file capacity when splitting files when non-single file logs
+	Max_time int    // Files that exceed the maximum retention time(hour) will be deleted, and no deletions will be made for 0.
+	Json     bool   // JSON format
 }
 
 // Get the default configuration item for the file log
 func DefaultFileConfig() *FileConfig {
 	fc := &FileConfig{
-		mu:        new(sync.RWMutex),
-		Path:      DEFAULT_PATH,
-		Filename:  DEFAULT_FILENAME,
-		Ext:       DEFAULT_EXT,
-		Single:    DEFAULT_SINGLE,
-		Max_size:  DEFAULT_Max_SIZE,
-		Max_files: DEFAULT_Max_Files,
-		Json:      DEFAULT_JSON,
+		mu:       new(sync.RWMutex),
+		Path:     DEFAULT_PATH,
+		Filename: DEFAULT_FILENAME,
+		Ext:      DEFAULT_EXT,
+		Single:   DEFAULT_SINGLE,
+		Max_size: DEFAULT_Max_SIZE,
+		Max_time: DEFAULT_Max_Time,
+		Json:     DEFAULT_JSON,
 	}
 	fc.getFile()
 	return fc
@@ -132,11 +131,18 @@ func (fc *FileConfig) splitLog() {
 // Limit the max number of log files
 // When Create a File
 func (fc *FileConfig) limitFiles() {
-	files := fc.getAllFiles()
-	if fc.Max_files > 0 && len(files) > fc.Max_files {
-		// TODO:Compare current files with max files
-		toDelFiles := files[:len(files)-fc.Max_files]
-		fmt.Println("Need To Del Files: ", toDelFiles)
+	if fc.Max_time > 0 {
+		path := fc.getFullDirPath()
+		filepath.Walk(path, func(file string, info os.FileInfo, err error) error {
+			if info == nil || info.IsDir() {
+				return nil
+			}
+			// TODO:Compare ModTime with MaxTime
+			if info.ModTime().Add(time.Hour * time.Duration(fc.Max_time)).Before(time.Now()) {
+				os.Remove(file)
+			}
+			return nil
+		})
 	}
 }
 
