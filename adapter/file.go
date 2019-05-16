@@ -16,8 +16,8 @@ const (
 )
 
 type FileConfig struct {
-	mu        *sync.RWMutex
-	F 	 *os.File
+	mu       *sync.RWMutex
+	F        *os.File
 	filename string
 	dir      string
 	size     int
@@ -26,7 +26,7 @@ type FileConfig struct {
 
 // Get the default configuration item for the file log
 func DefaultFileConfig() *FileConfig {
-	fc := &FileConfig{new(sync.RWMutex), nil,DEFAULT_FILENAME,DEFAULT_DIR, DEFAULT_SIZE, DEFAULT_EXT}
+	fc := &FileConfig{new(sync.RWMutex), nil, DEFAULT_FILENAME, DEFAULT_DIR, DEFAULT_SIZE, DEFAULT_EXT}
 	fc.getFile()
 	return fc
 }
@@ -79,6 +79,6 @@ func (fc *FileConfig) mkLogDir() {
 }
 
 // Split log file
-func (fc *FileConfig) splitLog(){
+func (fc *FileConfig) splitLog() {
 
 }
