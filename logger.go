@@ -27,29 +27,41 @@ var LevelTag = map[Level]string{
 }
 
 type Coolog struct {
-	adapter *adapter.Adapter
-	config  *Config
+	Adapter *adapter.Adapter
+	Config  *Config
+}
+
+// Only Coolog Var
+var log *Coolog
+
+// Get Coolog
+func GetCoolog() *Coolog {
+	if log == nil {
+		log = &Coolog{
+			Adapter: new(adapter.Adapter),
+			Config:  new(Config),
+		}
+	}
+	return log
 }
 
 // Get default file log config
-func FileConfig() *adapter.FileConfig {
-	return adapter.DefaultFileConfig()
+func FileConfig() *adapter.FileLog {
+	return adapter.DefaultFileLogConfig()
 }
 
 // Create a file log
-func NewFileLog(fc *adapter.FileConfig) *Coolog {
-	ad := adapter.NewFileAdapter(fc)
-	return &Coolog{adapter: ad}
+func NewFileLog(fl *adapter.FileLog) *Coolog {
+	GetCoolog().Adapter.FileLog = fl.InitFileLog()
+	return log
 }
 
 // Including multiple adapters working at the same time
 func (log *Coolog) Write(content string) {
-	if log.adapter.File != nil {
+	if log.Adapter.FileLog != nil {
 		// Write in files
-		go func() {
-			fmt.Print(content)
-			log.adapter.File.Write(content)
-		}()
+		fmt.Print(content)
+		log.Adapter.FileLog.Write(content)
 	}
 	// Todo more adapter
 }
@@ -60,7 +72,8 @@ func (log *Coolog) format(l Level, m ...interface{}) string {
 	// Log text temp
 	temp := "[ %s ] %s: [%s:%d] "
 	filename := filepath.Base(file)
-	return fmt.Sprintf(temp, time.Now().Format("2006-01-02 15:04:05"), LevelTag[l], filename, line) + fmt.Sprintln(m...)
+	time := time.Now().String()[:23]
+	return fmt.Sprintf(temp, time, LevelTag[l], filename, line) + fmt.Sprintln(m...)
 }
 
 //

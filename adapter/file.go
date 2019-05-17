@@ -1,11 +1,11 @@
 package adapter
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -19,23 +19,23 @@ const (
 	DEFAULT_JSON     = false           // Todo: Output Json Format
 )
 
-type FileConfig struct {
-	mu       *sync.RWMutex
-	f        *os.File
-	files    int    // The number of logs in Log Folder
-	Path     string // Log Folder Path
-	Filename string // Time Format of File Names
-	Ext      string // Log File Suffix
-	Single   bool   // Whether to save logs for a single file
-	MaxSize int64  // Upper limit of file capacity when splitting files when non-single file logs
-	MaxTime int    // Files that exceed the maximum retention time(hour) will be deleted, and no deletions will be made for 0.
-	Json     bool   // JSON format
+type FileLog struct {
+	init     bool        // The initialization status
+	logChan  chan string // Log Content Channel
+	f        *os.File    //
+	Path     string      // Log Folder Path
+	Filename string      // Time Format of File Names
+	Ext      string      // Log File Suffix
+	Single   bool        // Whether to save logs for a single file
+	MaxSize  int64       // Upper limit of file capacity when splitting files when non-single file logs
+	MaxTime  int         // Files that exceed the maximum retention time(hour) will be deleted, and no deletions will be made for 0.
+	Json     bool        // JSON format
 }
 
 // Get the default configuration item for the file log
-func DefaultFileConfig() *FileConfig {
-	return &FileConfig{
-		mu:       new(sync.RWMutex),
+func DefaultFileLogConfig() *FileLog {
+	return &FileLog{
+		logChan:  make(chan string),
 		Path:     DEFAULT_PATH,
 		Filename: DEFAULT_FILENAME,
 		Ext:      DEFAULT_EXT,
@@ -46,97 +46,134 @@ func DefaultFileConfig() *FileConfig {
 	}
 }
 
-// Write a line of string to the log file
-func (fc *FileConfig) Write(content string) {
-	fc.mu.Lock()
-	defer fc.mu.Unlock()
-	// TODO: Determine whether it has been initialized and locked
-	_, err := fc.getFile().Write([]byte(content))
-	if err != nil {
-		log.Fatalf("Write In File Err :%v", err)
+// Init File Log
+func (fl *FileLog) InitFileLog() *FileLog {
+	if !fl.init {
+		fl.init = true
+		go func() {
+			// fmt.Println("File Log Init")
+			fl.InitMainFile()
+			for {
+				select {
+				// Write File Log
+				case content := <-fl.logChan:
+					_, err := fl.getFile().Write([]byte(content))
+					if err != nil {
+						log.Fatalf("Write In File Err :%v", err)
+					}
+					fl.splitLog()
+				}
+			}
+		}()
 	}
-	fc.splitLog()
+	return fl
+}
+
+// Create Main Log File
+func (fl *FileLog) InitMainFile() *os.File {
+	// fmt.Println("InitMainFile")
+	defer fl.limitFiles()
+	filePath := fl.getFullFilePath()
+	_, err := os.Stat(filePath)
+	switch {
+	case os.IsNotExist(err):
+		fl.mkLogDir()
+	case os.IsPermission(err):
+		log.Fatalf("Permission :%v", err)
+	}
+	if fl.f != nil {
+		fl.close()
+	}
+	fl.f, err = os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("Fail To Open Log File :%v", err)
+	}
+	return fl.f
+}
+
+// Write a line of string to the log file
+func (fl *FileLog) Write(content string) {
+	// TODO: Determine whether it has been initialized and locked
+	fl.logChan <- content
 }
 
 // Open the log folder full path
-func (fc *FileConfig) getFullDirPath() string {
+func (fl *FileLog) getFullDirPath() string {
 	dir, _ := os.Getwd()
-	return dir + "/" + strings.Trim(fc.Path, "/") + "/"
+	return dir + "/" + strings.Trim(fl.Path, "/") + "/"
 }
 
 // Get the main log file name without ext in the corresponding format for today
-func (fc *FileConfig) getFilename() string {
-	return time.Now().Format(fc.Filename)
+func (fl *FileLog) getFilename() string {
+	return time.Now().Format(fl.Filename)
 }
 
 // Get log file ext
-func (fc *FileConfig) getExt() string {
-	return "." + strings.Trim(fc.Ext, ".")
+func (fl *FileLog) getExt() string {
+	return "." + strings.Trim(fl.Ext, ".")
 }
 
 // Get the log file full path
-func (fc *FileConfig) getFullFilePath() string {
-	return fc.getFullDirPath() + fc.getFilename() + fc.getExt()
+func (fl *FileLog) getFullFilePath() string {
+	return fl.getFullDirPath() + fl.getFilename() + fl.getExt()
 }
 
 // Get log file
-func (fc *FileConfig) getFile() *os.File {
-	if fc.f == nil {
-		filePath := fc.getFullFilePath()
-		_, err := os.Stat(filePath)
-		switch {
-		case os.IsNotExist(err):
-			fc.mkLogPATH()
-		case os.IsPermission(err):
-			log.Fatalf("Permission :%v", err)
+func (fl *FileLog) getFile() *os.File {
+	if fl.f == nil {
+		fl.InitMainFile()
+	} else {
+		// If file exists, Check date with file name
+		filename := filepath.Base(fl.f.Name())
+		if filename != fl.getFilename()+fl.getExt() {
+			// Recreate a log file
+			fl.InitMainFile()
 		}
-
-		fc.f, err = os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			log.Fatalf("Fail To Open Log File :%v", err)
-		}
-		fc.limitFiles()
 	}
-	return fc.f
+	return fl.f
 }
 
 // Create log dir
-func (fc *FileConfig) mkLogPATH() {
-	path := fc.getFullDirPath()
+func (fl *FileLog) mkLogDir() {
+	path := fl.getFullDirPath()
 	os.MkdirAll(path, os.ModePerm)
 }
 
 // Split log file
-func (fc *FileConfig) splitLog() {
-	// Single File Don't Split Files
-	if fc.Single {
+func (fl *FileLog) splitLog() {
+	// Single File Not Split Files
+	if fl.Single {
 		return
 	}
-	filePath := fc.getFullFilePath()
+	filePath := fl.getFullFilePath()
 	fileInfo, _ := os.Stat(filePath)
 	fileSize := fileInfo.Size()
 	// When current file size more than config, split file
-	if fileSize >= fc.MaxSize {
+	// fmt.Println("Compare Size with Max", fileSize, fl.MaxSize)
+	if fileSize >= fl.MaxSize {
 		// Create new main log file
-		fc.close()
+		fl.close()
 		// Rename main log file
-		newName := fc.getFullDirPath() + fc.getFilename() + "P" + time.Now().Format("150405") + fc.getExt()
-		os.Rename(fc.getFullFilePath(), newName)
-		fc.getFile()
+		newName := fl.getFullDirPath() + fl.getFilename() + "P" + time.Now().Format("150405") + fl.getExt()
+		err := os.Rename(fl.getFullFilePath(), newName)
+		if err != nil {
+			fmt.Println("Rename Err", err.Error())
+		}
+		fl.InitMainFile()
 	}
 }
 
 // Limit the max number of log files
 // When Create a File
-func (fc *FileConfig) limitFiles() {
-	if fc.MaxTime > 0 {
-		path := fc.getFullDirPath()
+func (fl *FileLog) limitFiles() {
+	if fl.MaxTime > 0 {
+		path := fl.getFullDirPath()
 		filepath.Walk(path, func(file string, info os.FileInfo, err error) error {
 			if info == nil || info.IsDir() {
 				return nil
 			}
 			// TODO:Compare ModTime with MaxTime
-			if info.ModTime().Add(time.Hour * time.Duration(fc.MaxTime)).Before(time.Now()) {
+			if info.ModTime().Add(time.Hour * time.Duration(fl.MaxTime)).Before(time.Now()) {
 				//fmt.Println("Del Old Log:", file)
 				os.Remove(file)
 			}
@@ -146,21 +183,21 @@ func (fc *FileConfig) limitFiles() {
 }
 
 // Check whether the number of log files exceeds the maximum
-func (fc *FileConfig) getAllFiles() []string {
-	path := fc.getFullDirPath()
-	files, _ := filepath.Glob(path + "*" + fc.getExt())
+func (fl *FileLog) getAllFiles() []string {
+	path := fl.getFullDirPath()
+	files, _ := filepath.Glob(path + "*" + fl.getExt())
 	return files
 }
 
 // Get the number of log files for today
-func (fc *FileConfig) getTodayFiles() []string {
-	path := fc.getFullDirPath()
-	files, _ := filepath.Glob(path + fc.getFilename() + "*" + fc.getExt())
+func (fl *FileLog) getTodayFiles() []string {
+	path := fl.getFullDirPath()
+	files, _ := filepath.Glob(path + fl.getFilename() + "*" + fl.getExt())
 	return files
 }
 
 // Close file
-func (fc *FileConfig) close() {
-	fc.f.Close()
-	fc.f = nil
+func (fl *FileLog) close() {
+	fl.f.Close()
+	fl.f = nil
 }
