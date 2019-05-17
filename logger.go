@@ -38,8 +38,10 @@ var log *Coolog
 func GetCoolog() *Coolog {
 	if log == nil {
 		log = &Coolog{
-			Adapter: new(adapter.Adapter),
-			Config:  new(Config),
+			Config: new(Config),
+			Adapter: &adapter.Adapter{
+				FileLog: FileConfig(),
+			},
 		}
 	}
 	return log
@@ -50,8 +52,8 @@ func FileConfig() *adapter.FileLog {
 	return adapter.DefaultFileLogConfig()
 }
 
-// Create a file log
-func NewFileLog(fl *adapter.FileLog) *Coolog {
+// Set File Log Config
+func SetFileLog(fl *adapter.FileLog) *Coolog {
 	GetCoolog().Adapter.FileLog = fl.InitFileLog()
 	return log
 }
@@ -72,36 +74,42 @@ func (log *Coolog) format(l Level, m ...interface{}) string {
 	// Log text temp
 	temp := "[ %s ] %s: [%s:%d] "
 	filename := filepath.Base(file)
-	time := time.Now().String()[:23]
+	time := time.Now().Format("2006-01-02 15:04:05.000")
 	return fmt.Sprintf(temp, time, LevelTag[l], filename, line) + fmt.Sprintln(m...)
 }
 
-//
-func (log *Coolog) Debug(content ...interface{}) {
-	msg := log.format(LEVEL_DEBUG, content...)
+// Write Directly Without Initialization
+func checkLoggerInit() *Coolog {
+	GetCoolog().Adapter.FileLog.InitFileLog()
+	return log
+}
+
+// Debug
+func Debug(content ...interface{}) {
+	msg := checkLoggerInit().format(LEVEL_DEBUG, content...)
 	log.Write(msg)
 }
 
 //
-func (log *Coolog) Info(content ...interface{}) {
-	msg := log.format(LEVEL_INFO, content...)
+func Info(content ...interface{}) {
+	msg := checkLoggerInit().format(LEVEL_INFO, content...)
 	log.Write(msg)
 }
 
 //
-func (log *Coolog) Notice(content ...interface{}) {
-	msg := log.format(LEVEL_NOTICE, content...)
+func Notice(content ...interface{}) {
+	msg := checkLoggerInit().format(LEVEL_NOTICE, content...)
 	log.Write(msg)
 }
 
 //
-func (log *Coolog) Warning(content ...interface{}) {
-	msg := log.format(LEVEL_WARNING, content...)
+func Warning(content ...interface{}) {
+	msg := checkLoggerInit().format(LEVEL_WARNING, content...)
 	log.Write(msg)
 }
 
 //
-func (log *Coolog) Error(content ...interface{}) {
-	msg := log.format(LEVEL_ERROR, content...)
+func Error(content ...interface{}) {
+	msg := checkLoggerInit().format(LEVEL_ERROR, content...)
 	log.Write(msg)
 }

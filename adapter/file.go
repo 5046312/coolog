@@ -51,7 +51,7 @@ func (fl *FileLog) InitFileLog() *FileLog {
 	if !fl.init {
 		fl.init = true
 		go func() {
-			// fmt.Println("File Log Init")
+			fmt.Println("File Log Init")
 			fl.InitMainFile()
 			for {
 				select {
