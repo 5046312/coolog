@@ -16,7 +16,7 @@ conf := coolog.FileConfig()
 conf.Single = true
 conf.Ext = ".bin"
 conf.Path = "./runtime/lll/"
-coolog.SetFileLog(fc)
+coolog.SetFileLog(conf)
 
 // Write Log
 coolog.Debug("Write Debug in file")
