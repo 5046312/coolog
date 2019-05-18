@@ -3,7 +3,7 @@
 ### Install & Update
 
 ```
-go get github.com/5046312/coolog
+go get -u github.com/5046312/coolog
 ```
 
 ### Usage
