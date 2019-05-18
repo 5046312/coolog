@@ -40,7 +40,7 @@ func GetCoolog() *Coolog {
 		logger = &Coolog{
 			Config: new(Config),
 			Adapter: &adapter.Adapter{
-				FileLog: FileConfig(),
+				FileLog: nil,
 			},
 		}
 	}
@@ -54,7 +54,12 @@ func FileConfig() *adapter.FileLog {
 
 // Set File Log Config
 func SetFileLog(fl *adapter.FileLog) *Coolog {
-	GetCoolog().Adapter.FileLog = fl
+	// Uninitialized
+	if GetCoolog().Adapter.FileLog == nil {
+		GetCoolog().Adapter.FileLog = fl.InitFileLog()
+	} else {
+		Warning("Coolog Has Been Initialized For File")
+	}
 	return logger
 }
 
@@ -81,7 +86,9 @@ func (log *Coolog) format(l Level, m ...interface{}) string {
 // Write Directly Without Initialization
 func checkLoggerInit() *Coolog {
 	// Initialization of default configuration occurs when global variables are empty
-	GetCoolog().Adapter.FileLog.InitFileLog()
+	if GetCoolog().Adapter.FileLog == nil {
+		SetFileLog(FileConfig())
+	}
 	return logger
 }
 

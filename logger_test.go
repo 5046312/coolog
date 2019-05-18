@@ -35,4 +35,12 @@ func Test_Init_TwiceTime(t *testing.T) {
 	fc := FileConfig()
 	SetFileLog(fc)
 	//Debug("初始化Log配置")
+	time.Sleep(time.Microsecond * 600)
+}
+
+func Test_Init(t *testing.T) {
+	fc := FileConfig()
+	SetFileLog(fc)
+	//Debug("初始化Log配置")
+	time.Sleep(time.Microsecond * 600)
 }
