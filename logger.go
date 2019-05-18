@@ -1,8 +1,8 @@
 package coolog
 
 import (
-	"coolog/adapter"
 	"fmt"
+	"github.com/5046312/coolog/adapter"
 	"path/filepath"
 	"runtime"
 	"time"
