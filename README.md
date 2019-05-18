@@ -1,6 +1,6 @@
 ## Coolog
 
-### Install
+### Install & Update
 
 ```
 go get github.com/5046312/coolog
