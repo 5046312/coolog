@@ -28,3 +28,11 @@ func Test_Coolog_Write_Directly(t *testing.T) {
 		time.Sleep(time.Microsecond * 600)
 	}
 }
+
+func Test_Init_TwiceTime(t *testing.T) {
+	Debug("Write Debug in file")
+
+	fc := FileConfig()
+	SetFileLog(fc)
+	//Debug("初始化Log配置")
+}

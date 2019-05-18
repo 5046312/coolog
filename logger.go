@@ -32,19 +32,19 @@ type Coolog struct {
 }
 
 // Only Coolog Var
-var log *Coolog
+var logger *Coolog
 
 // Get Coolog
 func GetCoolog() *Coolog {
-	if log == nil {
-		log = &Coolog{
+	if logger == nil {
+		logger = &Coolog{
 			Config: new(Config),
 			Adapter: &adapter.Adapter{
 				FileLog: FileConfig(),
 			},
 		}
 	}
-	return log
+	return logger
 }
 
 // Get default file log config
@@ -54,8 +54,8 @@ func FileConfig() *adapter.FileLog {
 
 // Set File Log Config
 func SetFileLog(fl *adapter.FileLog) *Coolog {
-	GetCoolog().Adapter.FileLog = fl.InitFileLog()
-	return log
+	GetCoolog().Adapter.FileLog = fl
+	return logger
 }
 
 // Including multiple adapters working at the same time
@@ -74,42 +74,43 @@ func (log *Coolog) format(l Level, m ...interface{}) string {
 	// Log text temp
 	temp := "[ %s ] %s: [%s:%d] "
 	filename := filepath.Base(file)
-	time := time.Now().Format("2006-01-02 15:04:05.000")
-	return fmt.Sprintf(temp, time, LevelTag[l], filename, line) + fmt.Sprintln(m...)
+	times := time.Now().Format("2006-01-02 15:04:05.000")
+	return fmt.Sprintf(temp, times, LevelTag[l], filename, line) + fmt.Sprintln(m...)
 }
 
 // Write Directly Without Initialization
 func checkLoggerInit() *Coolog {
+	// Initialization of default configuration occurs when global variables are empty
 	GetCoolog().Adapter.FileLog.InitFileLog()
-	return log
+	return logger
 }
 
 // Debug
 func Debug(content ...interface{}) {
 	msg := checkLoggerInit().format(LEVEL_DEBUG, content...)
-	log.Write(msg)
+	logger.Write(msg)
 }
 
 //
 func Info(content ...interface{}) {
 	msg := checkLoggerInit().format(LEVEL_INFO, content...)
-	log.Write(msg)
+	logger.Write(msg)
 }
 
 //
 func Notice(content ...interface{}) {
 	msg := checkLoggerInit().format(LEVEL_NOTICE, content...)
-	log.Write(msg)
+	logger.Write(msg)
 }
 
 //
 func Warning(content ...interface{}) {
 	msg := checkLoggerInit().format(LEVEL_WARNING, content...)
-	log.Write(msg)
+	logger.Write(msg)
 }
 
 //
 func Error(content ...interface{}) {
 	msg := checkLoggerInit().format(LEVEL_ERROR, content...)
-	log.Write(msg)
+	logger.Write(msg)
 }
