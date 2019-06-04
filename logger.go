@@ -28,7 +28,7 @@ var levelTags = map[level]string{
 
 type coolog struct {
 	Adapter *adapter.Adapter
-	Config  *Config
+	Config  *config
 }
 
 // Only coolog Var
@@ -38,7 +38,7 @@ var logger *coolog
 func getCoolog() *coolog {
 	if logger == nil {
 		logger = &coolog{
-			Config: new(Config),
+			Config: new(config),
 			Adapter: &adapter.Adapter{
 				FileLog: nil,
 			},

@@ -2,7 +2,7 @@ package coolog
 
 type Adapter string
 
-type Config struct {
+type config struct {
 	adapter Adapter
 	level   level
 }
