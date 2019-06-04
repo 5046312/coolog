@@ -8,36 +8,36 @@ import (
 	"time"
 )
 
-type Level int
+type level int
 
 const (
-	LEVEL_DEBUG Level = iota
-	LEVEL_INFO
-	LEVEL_NOTICE
-	LEVEL_WARNING
-	LEVEL_ERROR
+	levelDebug level = iota
+	levelInfo
+	levelNotice
+	levelWarning
+	levelError
 )
 
-var LevelTag = map[Level]string{
-	LEVEL_DEBUG:   "Debug",
-	LEVEL_INFO:    "Info",
-	LEVEL_NOTICE:  "Notice",
-	LEVEL_WARNING: "Warning",
-	LEVEL_ERROR:   "Error",
+var levelTags = map[level]string{
+	levelDebug:   "Debug",
+	levelInfo:    "Info",
+	levelNotice:  "Notice",
+	levelWarning: "Warning",
+	levelError:   "Error",
 }
 
-type Coolog struct {
+type coolog struct {
 	Adapter *adapter.Adapter
 	Config  *Config
 }
 
-// Only Coolog Var
-var logger *Coolog
+// Only coolog Var
+var logger *coolog
 
-// Get Coolog
-func GetCoolog() *Coolog {
+// Get coolog
+func getCoolog() *coolog {
 	if logger == nil {
-		logger = &Coolog{
+		logger = &coolog{
 			Config: new(Config),
 			Adapter: &adapter.Adapter{
 				FileLog: nil,
@@ -53,18 +53,18 @@ func FileConfig() *adapter.FileLog {
 }
 
 // Set File Log Config
-func SetFileLog(fl *adapter.FileLog) *Coolog {
+func SetFile(fl *adapter.FileLog) *coolog {
 	// Uninitialized
-	if GetCoolog().Adapter.FileLog == nil {
-		GetCoolog().Adapter.FileLog = fl.InitFileLog()
+	if getCoolog().Adapter.FileLog == nil {
+		getCoolog().Adapter.FileLog = fl.InitFileLog()
 	} else {
-		Warning("Coolog Has Been Initialized For File")
+		Warning("Has Been Initialized For File")
 	}
 	return logger
 }
 
 // Including multiple adapters working at the same time
-func (log *Coolog) Write(content string) {
+func (log *coolog) Write(content string) {
 	if log.Adapter.FileLog != nil {
 		// Write in files
 		fmt.Print(content)
@@ -74,50 +74,54 @@ func (log *Coolog) Write(content string) {
 }
 
 // Format log content
-func (log *Coolog) format(l Level, m ...interface{}) string {
+func format(l level, m ...interface{}) string {
 	_, file, line, _ := runtime.Caller(2)
 	// Log text temp
 	temp := "[ %s ] %s: [%s:%d] "
 	filename := filepath.Base(file)
 	times := time.Now().Format("2006-01-02 15:04:05.000")
-	return fmt.Sprintf(temp, times, LevelTag[l], filename, line) + fmt.Sprintln(m...)
+	return fmt.Sprintf(temp, times, levelTags[l], filename, line) + fmt.Sprintln(m...)
 }
 
 // Write Directly Without Initialization
-func checkLoggerInit() *Coolog {
+func checkLoggerInit() *coolog {
 	// Initialization of default configuration occurs when global variables are empty
-	if GetCoolog().Adapter.FileLog == nil {
-		SetFileLog(FileConfig())
+	if getCoolog().Adapter.FileLog == nil {
+		SetFile(FileConfig())
 	}
 	return logger
 }
 
+func Record(content string) {
+	checkLoggerInit().Write(content)
+}
+
 // Debug
 func Debug(content ...interface{}) {
-	msg := checkLoggerInit().format(LEVEL_DEBUG, content...)
-	logger.Write(msg)
+	msg := format(levelDebug, content...)
+	checkLoggerInit().Write(msg)
 }
 
 //
 func Info(content ...interface{}) {
-	msg := checkLoggerInit().format(LEVEL_INFO, content...)
-	logger.Write(msg)
+	msg := format(levelInfo, content...)
+	checkLoggerInit().Write(msg)
 }
 
 //
 func Notice(content ...interface{}) {
-	msg := checkLoggerInit().format(LEVEL_NOTICE, content...)
-	logger.Write(msg)
+	msg := format(levelNotice, content...)
+	checkLoggerInit().Write(msg)
 }
 
 //
 func Warning(content ...interface{}) {
-	msg := checkLoggerInit().format(LEVEL_WARNING, content...)
-	logger.Write(msg)
+	msg := format(levelWarning, content...)
+	checkLoggerInit().Write(msg)
 }
 
 //
 func Error(content ...interface{}) {
-	msg := checkLoggerInit().format(LEVEL_ERROR, content...)
-	logger.Write(msg)
+	msg := format(levelError, content...)
+	checkLoggerInit().Write(msg)
 }
