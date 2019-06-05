@@ -2,10 +2,11 @@ package coolog
 
 import (
 	"fmt"
-	"github.com/5046312/coolog/adapter"
 	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/5046312/coolog/adapter"
 )
 
 type level int
@@ -16,6 +17,7 @@ const (
 	levelNotice
 	levelWarning
 	levelError
+	levelPanic
 )
 
 var levelTags = map[level]string{
@@ -24,6 +26,7 @@ var levelTags = map[level]string{
 	levelNotice:  "Notice",
 	levelWarning: "Warning",
 	levelError:   "Error",
+	levelPanic:   "Panic",
 }
 
 type coolog struct {
@@ -124,4 +127,12 @@ func Warning(content ...interface{}) {
 func Error(content ...interface{}) {
 	msg := format(levelError, content...)
 	checkLoggerInit().Write(msg)
+}
+
+// Panic
+func Panic(content ...interface{}) {
+	msg := format(levelPanic, content...)
+	checkLoggerInit().Write(msg)
+	time.Sleep(time.Second)
+	panic(content)
 }
